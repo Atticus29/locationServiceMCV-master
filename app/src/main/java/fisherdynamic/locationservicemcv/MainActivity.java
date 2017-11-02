@@ -3,12 +3,15 @@ package fisherdynamic.locationservicemcv;
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -42,9 +45,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         IntentFilter intentFilter = new IntentFilter("locationServiceUpdates");
         LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(mMessageReceiver, intentFilter);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_FINE_LOCATION);
-//            return;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+            && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                new AlertDialog.Builder(this)
+                    .setMessage("Really need \"location\" permission to continue.")
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            requestLocationPermission();
+                        }
+                    })
+                    .show();
+            } else {
+                requestLocationPermission();
+            }
         } else {
             startLocationService();
         }
@@ -59,32 +75,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-//        startLocationService();
-    }
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+//    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-//        stopLocationService();
+        stopLocationService();
     }
 
-    public void startLocationService() {
+    private void requestLocationPermission() {
+        ActivityCompat.requestPermissions(this,
+                                          new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                          MY_PERMISSIONS_REQUEST_FINE_LOCATION);
+    }
+
+    private void startLocationService() {
         Intent intent = new Intent(this, LocationService.class);
         startService(intent);
         Log.d(TAG, "<<<<location service started");
     }
 
-    public void stopLocationService() {
+    private void stopLocationService() {
         Intent intent = new Intent(this, LocationService.class);
         stopService(intent);
+        Log.d(TAG, "<<<<location service stopped");
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+                                           @NonNull String permissions[], @NonNull  int[] grantResults) {
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_FINE_LOCATION: {
                 // If request is cancelled, the result arrays are empty.
@@ -92,15 +114,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     startLocationService();
                 } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
+                    finish();
                 }
-                return;
             }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
         }
     }
 

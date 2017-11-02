@@ -77,7 +77,7 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
         }
     }
 
-    public void sendToActivity(Double currentLatitude, Double currentLongitude) {
+    private void sendToActivity(Double currentLatitude, Double currentLongitude) {
         Intent intent = new Intent("locationServiceUpdates");
         intent.putExtra("ServiceLatitudeUpdate", currentLatitude.toString());
         intent.putExtra("ServiceLongitudeUpdate", currentLongitude.toString());
